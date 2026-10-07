@@ -101,7 +101,7 @@
   <p>An interior edge belongs to two triangles, which together form a quadrilateral. A flip replaces their shared diagonal with the other diagonal. I gather all six local halfedges and four vertices first, then reassign the six <code>next</code>, <code>twin</code>, vertex, edge, and face relationships. I also update the face and vertex representative halfedges. The operation reuses the same elements; it does not need new mesh objects.</p>
   <p>Keeping a small before-and-after picture of the two face cycles was the useful debugging trick here. It made it easier to check the winding and to see whether a representative halfedge still began at its vertex. I leave boundary edges alone.</p>
   <div class="image-grid">
-    <figure><img src="./assets/part4-teapot-before-flip.jpg" alt="Teapot mesh before an edge flip"><figcaption>An interior teapot edge selected before the flip.</figcaption></figure>
+    <figure><img src="./assets/part4-teapot-before-flip.png" alt="Teapot mesh before an edge flip"><figcaption>The teapot triangulation before flipping an interior edge.</figcaption></figure>
     <figure><img src="./assets/part4-teapot-after-flip.jpg" alt="Teapot mesh after the selected edge was flipped"><figcaption>The same area after flipping its diagonal. The change is local to two small triangles near the center.</figcaption></figure>
   </div>
 
