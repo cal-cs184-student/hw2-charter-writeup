@@ -36,6 +36,13 @@
 			.image-grid img, figure > img { max-width: 100%; height: auto; }
 			.image-grid figcaption { font-size: 0.85em; line-height: 1.4; margin-top: 5px; }
 
+            p { line-height: 1.5; }
+            @media print {
+                .container { padding: 0; }
+                figure { break-inside: avoid; }
+                h2, h3 { break-after: avoid; }
+                a { overflow-wrap: anywhere; }
+            }
 			@media (max-width: 700px) {
 				.container { padding: 24px 5%; }
 				.image-grid { grid-template-columns: 1fr; }
@@ -55,19 +62,21 @@
 
 		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw2-charter-writeup">https://github.com/cal-cs184-student/hw2-charter-writeup</a>
 
+        <p><a href="./hw2-writeup.pdf">Download the write-up PDF</a></p>
+
 		<!--
 		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
 		-->
 
 
   <h2>Overview</h2>
-  <p>This homework took me from interpolating a few points to changing the connectivity of a whole triangle mesh. I implemented de Casteljau evaluation for Bézier curves and patches, area-weighted vertex normals, edge flips, edge splits, and Loop subdivision. The most useful lesson was how much bookkeeping lives underneath a simple-looking edit: changing one diagonal means keeping halfedges, twins, faces, vertices, and representative pointers consistent.</p>
+  <p>This homework took us from interpolating a few points to changing the connectivity of a whole triangle mesh. We implemented de Casteljau evaluation for Bézier curves and patches, area-weighted vertex normals, edge flips, edge splits, and Loop subdivision. The most useful lesson was how much bookkeeping lives underneath a simple-looking edit: changing one diagonal means keeping halfedges, twins, faces, vertices, and representative pointers consistent.</p>
 
 
   <h2>Section I: Bezier Curves and Surfaces</h2>
   <h3>Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
-  <p>For each adjacent pair of control points, I calculate <code>(1 − t)Pᵢ + tPᵢ₊₁</code>. That makes a shorter row of points. Repeating this step eventually leaves one point on the curve. The viewer lets me step through each row with <code>E</code>; the green trace shows the full curve when <code>C</code> is on.</p>
-  <p>I made a six-point curve with a rise, a dip, and another rise so the intermediate levels are easy to follow. Each image below adds one level, ending at the evaluated point.</p>
+  <p>For each adjacent pair of control points, we calculate <code>(1 − t)Pᵢ + tPᵢ₊₁</code>. That makes a shorter row of points. Our <code>evaluateStep</code> function returns just this next row; repeating the step eventually leaves one point on the curve. The viewer lets us step through each row with <code>E</code>; the green trace shows the full curve when <code>C</code> is on.</p>
+  <p>We made a six-point curve with a rise, a dip, and another rise so the intermediate levels are easy to follow. We saved it as <code>bzc/six_points.bzc</code>. The first sequence evaluates it at <code>t = 0.37</code>; each image adds one level, ending at the evaluated point.</p>
   <div class="image-grid three">
     <figure><img src="./assets/part1-00-control-points.png" alt="Six original curve control points"><figcaption>Original six control points.</figcaption></figure>
     <figure><img src="./assets/part1-01-level-1.png" alt="First de Casteljau level"><figcaption>Level 1: five interpolated points.</figcaption></figure>
@@ -78,19 +87,19 @@
   </div>
   <div class="image-grid">
     <figure><img src="./assets/part1-06-complete-curve.png" alt="Completed green Bézier curve"><figcaption>The complete curve traced in green.</figcaption></figure>
-    <figure><img src="./assets/part1-07-changed-t.png" alt="Curve at a different parameter"><figcaption>Scrolling changes <code>t</code>, so the evaluated point moves along the same curve.</figcaption></figure>
-    <figure><img src="./assets/part1-08-edited-curve.png" alt="Bézier curve with a changed control point"><figcaption>I raised one control point in a second six-point curve. The green curve changes with it.</figcaption></figure>
+    <figure><img src="./assets/part1-07-changed-t.png" alt="Curve at a different parameter"><figcaption>With <code>t = 0.72</code>, the evaluated point moves further along the curve.</figcaption></figure>
+    <figure><img src="./assets/part1-08-edited-curve.png" alt="Bézier curve with a changed control point"><figcaption>We raised the fourth control point and changed <code>t</code> to <code>0.72</code>. Both the curve and the evaluated point change.</figcaption></figure>
   </div>
 
 
   <h3>Part 2: Bezier surfaces with separable 1D de Casteljau</h3>
-  <p>The 2D version uses the same routine twice. I evaluate each row of 3D control points at <code>u</code>, which gives a new column of points, then evaluate that column at <code>v</code>. This separable approach returns one position on the patch for each <code>(u, v)</code>. The teapot below comes from <code>bez/teapot.bez</code>.</p>
+  <p>For a surface, we apply the same interpolation to 3D points in two passes. The <code>evaluate1D</code> helper calls <code>evaluateStep</code> until one point remains. We use it to evaluate each row of control points at <code>u</code>, which gives a new column of points, then evaluate that column at <code>v</code>. This separable approach returns one position on the patch for each <code>(u, v)</code>. The teapot below comes from <code>bez/teapot.bez</code>.</p>
   <figure><img src="./assets/part2-bezier-teapot.jpg" alt="Teapot evaluated from Bézier patches"><figcaption>Bézier patch teapot produced by the surface evaluator.</figcaption></figure>
 
 
   <h2>Section II: Triangle Meshes and Half-Edge Data Structure</h2>
   <h3>Part 3: Area-weighted vertex normals</h3>
-  <p>At each vertex, I walk the incident faces through the halfedge ring. For each triangle, the cross product of its two outgoing side vectors gives a face normal whose length also reflects its area. I sum those vectors and normalize once at the end. The result is the vertex normal used for smooth shading.</p>
+  <p>At each vertex, we walk the incident faces through the halfedge ring using <code>h = h->twin()->next()</code>, skipping virtual boundary faces. For each triangle, the cross product of its two outgoing side vectors points along its normal and has magnitude twice its area. We sum these unnormalized vectors, so larger triangles contribute more, then normalize once at the end. The common factor of two cancels during normalization. The result is the vertex normal used for smooth shading.</p>
   <div class="image-grid">
     <figure><img src="./assets/part3-flat-teapot.jpg" alt="Triangle mesh teapot with flat shading"><figcaption><code>dae/teapot.dae</code> with flat shading.</figcaption></figure>
     <figure><img src="./assets/part3-smooth-teapot.jpg" alt="Triangle mesh teapot with smooth vertex normals"><figcaption>The same mesh with interpolated vertex normals. The facets blend much more smoothly.</figcaption></figure>
@@ -98,42 +107,78 @@
 
 
   <h3>Part 4: Edge flip</h3>
-  <p>An interior edge belongs to two triangles, which together form a quadrilateral. A flip replaces their shared diagonal with the other diagonal. I gather all six local halfedges and four vertices first, then reassign the six <code>next</code>, <code>twin</code>, vertex, edge, and face relationships. I also update the face and vertex representative halfedges. The operation reuses the same elements; it does not need new mesh objects.</p>
-  <p>Keeping a small before-and-after picture of the two face cycles was the useful debugging trick here. It made it easier to check the winding and to see whether a representative halfedge still began at its vertex. I leave boundary edges alone.</p>
+  <p>An interior edge belongs to two triangles, which together form a quadrilateral. A flip replaces their shared diagonal with the other diagonal. We gather all six local halfedges and four vertices first, then reassign the six <code>next</code>, <code>twin</code>, vertex, edge, and face relationships. We also update the face and vertex representative halfedges. The operation reuses the same elements; it does not need new mesh objects.</p>
+  <p>We checked each face cycle and representative halfedge after repeated flips. A vertex's representative must still begin at that vertex, and each twin pair must describe the same edge in opposite directions. Boundary edges remain unchanged because they do not have a second real triangle to flip into.</p>
   <div class="image-grid">
-    <figure><img src="./assets/part4-teapot-before-flip.png" alt="Teapot mesh before an edge flip"><figcaption>The teapot triangulation before flipping an interior edge.</figcaption></figure>
-    <figure><img src="./assets/part4-teapot-after-flip.png" alt="Teapot mesh after the selected edge was flipped"><figcaption>The same area after flipping its diagonal. The change is local to two small triangles near the center.</figcaption></figure>
+    <figure><img src="./assets/teapot-edit-before.png" alt="Teapot mesh before an edge flip"><figcaption>Close-up of the teapot before three interior edge flips.</figcaption></figure>
+    <figure><img src="./assets/teapot-edit-after.png" alt="Teapot mesh after the selected edge was flipped"><figcaption>After three flips near the front of the teapot. The changed diagonals are local; the number of mesh elements stays the same.</figcaption></figure>
   </div>
 
 
   <h3>Part 5: Edge split</h3>
-  <p>A split inserts a vertex at the selected edge's midpoint. The two adjacent triangles become four. I keep the original edge for one half of the old diagonal, create three more edges and two more faces, then wire the six new halfedges into the four triangle cycles. I mark the edges and vertex that were created so subdivision can tell old topology from new topology later.</p>
-  <p>The cube face makes the change easy to see: one diagonal becomes a midpoint connected to the other two corners. I also flipped one of the new edges to check that the two operations work together. As with the flip, writing down each local triangle's vertex order was the clearest way to catch miswired <code>next</code> pointers.</p>
+  <p>A split inserts a vertex at the selected edge's midpoint. The two adjacent triangles become four. We keep the original edge for one half of the old diagonal, create three more edges and two more faces, then wire the six new halfedges into the four triangle cycles. We mark the midpoint vertex as new. For subdivision, both halves of the original edge keep <code>isNew = false</code>, while the two edges joining the midpoint to the opposite vertices get <code>isNew = true</code>. This keeps the later flip pass from flipping either half of an original edge.</p>
+  <p>The cube face makes the change easy to see: one diagonal becomes a midpoint connected to the other two corners. We then flipped a neighboring edge across a cube crease to check that the operations work together. Choosing that edge avoids the collinear triangle that can result from immediately flipping a spoke in a flat, newly split face. Because the neighboring triangles lie on different planes, that flip changes the surface shape as well as its connectivity. Our checks verify face cycles, twin pairs, representative pointers, and the expected element counts after each edit.</p>
   <div class="image-grid three">
-    <figure><img src="./assets/part5-cube-before-split.jpg" alt="Cube face before splitting its diagonal"><figcaption>Before: a face with one diagonal.</figcaption></figure>
-    <figure><img src="./assets/part5-cube-after-split.jpg" alt="Cube face after splitting its diagonal"><figcaption>After: a midpoint and four triangles.</figcaption></figure>
-    <figure><img src="./assets/part5-cube-split-and-flip.jpg" alt="Cube face after a split and an edge flip"><figcaption>After a split followed by a flip of one new edge.</figcaption></figure>
+    <figure><img src="./assets/cube-edit-before.png" alt="Cube face before splitting its diagonal"><figcaption>Before: a face with one diagonal.</figcaption></figure>
+    <figure><img src="./assets/cube-edit-split.png" alt="Cube face after splitting its diagonal"><figcaption>After: a midpoint and four triangles.</figcaption></figure>
+    <figure><img src="./assets/cube-edit-split-flip.png" alt="Cube face after a split and an edge flip"><figcaption>After the split and a neighboring edge flip across a crease.</figcaption></figure>
   </div>
-  <p>Boundary-edge splits are outside this implementation, so the split routine leaves those edges unchanged.</p>
+  <p>We also implemented boundary splits for extra credit. We split only the real triangle into two, adding one vertex, two edges, one face, and four halfedges. On the virtual boundary face, the walk <code>B → A</code> becomes <code>B → M → A</code>; the loop stays closed. The midpoint's representative still lies on a segment of the original edge. We handle either orientation of the original edge's representative.</p>
 
 
   <h3>Part 6: Loop subdivision for mesh upsampling</h3>
-  <p>I first record the original edges and compute all new positions from the untouched mesh. For an old vertex of degree <code>n</code>, each neighbor gets weight <code>u</code>, where <code>u = 3/16</code> when <code>n = 3</code> and otherwise <code>u = 3/(8n)</code>. The old vertex keeps weight <code>1 − nu</code>. A new edge point gets <code>3/8</code> from each endpoint and <code>1/8</code> from each of the two opposite vertices.</p>
-  <p>Only after saving those positions do I split every original edge. Then I flip new edges that connect one old and one new vertex, and finally assign the saved positions. Keeping the geometry update until the end matters: otherwise an early move would affect later weights.</p>
+  <p>We first record the original edges and compute all new positions from the untouched mesh. For an old vertex of degree <code>n</code>, each neighbor gets weight <code>u</code>, where <code>u = 3/16</code> when <code>n = 3</code> and otherwise <code>u = 3/(8n)</code>. The old vertex keeps weight <code>1 − nu</code>. A new edge point gets <code>3/8</code> from each endpoint and <code>1/8</code> from each of the two opposite vertices.</p>
+  <p>Only after saving those positions do we split every original edge. Then we flip new edges that connect one old and one new vertex, and finally assign the saved positions. Keeping the geometry update until the end matters: otherwise an early move would affect later weights.</p>
   <div class="image-grid">
-    <figure><img src="./assets/part6-cube-original.jpg" alt="Original triangulated cube"><figcaption>Original cube.</figcaption></figure>
-    <figure><img src="./assets/part6-cube-one-loop.jpg" alt="Cube after one Loop subdivision"><figcaption>One Loop iteration.</figcaption></figure>
-    <figure><img src="./assets/part6-cube-two-loop.jpg" alt="Cube after two Loop subdivisions"><figcaption>Two iterations.</figcaption></figure>
-    <figure><img src="./assets/part6-cube-three-loop.jpg" alt="Cube after three Loop subdivisions"><figcaption>Three iterations. The formerly sharp corners are noticeably rounded.</figcaption></figure>
+    <figure><img src="./assets/cube-none-0.png" alt="Original triangulated cube"><figcaption>Original cube.</figcaption></figure>
+    <figure><img src="./assets/cube-none-1.png" alt="Cube after one Loop subdivision"><figcaption>One Loop iteration.</figcaption></figure>
+    <figure><img src="./assets/cube-none-2.png" alt="Cube after two Loop subdivisions"><figcaption>Two iterations.</figcaption></figure>
+    <figure><img src="./assets/cube-none-3.png" alt="Cube after three Loop subdivisions"><figcaption>Three iterations. The formerly sharp corners are noticeably rounded.</figcaption></figure>
   </div>
-  <p>Each round smooths away sharp edges and corners because the old vertices move toward their neighbors while new vertices are averaged into each triangle. Extra splits near a feature can give it more local support and slow that rounding. The cube also starts with an uneven triangulation: a face diagonal gives its two endpoints different neighborhoods than the other two corners. Repeated averaging carries that difference forward, producing a slightly asymmetric result.</p>
-  <p>I tried flipping a cube face diagonal before subdivision. The comparison below shows that preprocessing changes which corners receive that diagonal's influence, but this single flip is not a complete symmetric triangulation. A fuller preprocessing pass would need to make the connectivity around corresponding corners match across the cube.</p>
-  <div class="image-grid three">
-    <figure><img src="./assets/part6-cube-flipped-before-loop.jpg" alt="Cube after a diagonal flip before subdivision"><figcaption>Cube with one face diagonal flipped.</figcaption></figure>
-    <figure><img src="./assets/part6-cube-flipped-one-loop.jpg" alt="Flipped cube after one Loop subdivision"><figcaption>One iteration after the flip.</figcaption></figure>
-    <figure><img src="./assets/part6-cube-flipped-two-loop.jpg" alt="Flipped cube after two Loop subdivisions"><figcaption>Two iterations after the flip.</figcaption></figure>
+  <p>Each iteration smooths sharp edges and corners because old vertices move toward their neighbors and the new edge points average nearby positions. The original cube has an uneven triangulation: each face diagonal gives its endpoints an extra neighbor. Corners therefore have different degrees and neighbor directions, so repeated averaging makes the result asymmetric.</p>
+  <p>Flipping one face diagonal changes which corners receive that influence but does not remove the imbalance. To make the cube subdivide symmetrically, we instead split all six face diagonals. Each face then has a center connected to its four corners. All eight original corners have degree six with equivalent neighborhoods, and all six face centers have degree four. Loop treats corresponding vertices the same, so the symmetry survives repeated subdivision.</p>
+  <div class="image-grid">
+    <figure><img src="./assets/cube-symmetric-0.png" alt="Cube with all six face diagonals split"><figcaption>Preprocessed cube: 14 vertices and 24 triangles.</figcaption></figure>
+    <figure><img src="./assets/cube-symmetric-1.png" alt="Symmetric cube after one Loop iteration"><figcaption>One Loop iteration after preprocessing.</figcaption></figure>
+    <figure><img src="./assets/cube-symmetric-2.png" alt="Symmetric cube after two Loop iterations"><figcaption>Two iterations; corresponding corners round evenly.</figcaption></figure>
+    <figure><img src="./assets/cube-symmetric-3.png" alt="Symmetric cube after three Loop iterations"><figcaption>Three iterations, with the same camera as the original cube sequence.</figcaption></figure>
+  </div>
+  <p>We separately tested pre-splitting the cube's twelve physical edges, where two faces meet at a right angle. This puts a midpoint closer to each corner along those edges. The comparison below uses two Loop iterations in both cases. The added samples reduce the rounding and shrinkage in this example, but do not create a permanent crease: repeated subdivision still smooths the feature.</p>
+  <div class="image-grid">
+    <figure><img src="./assets/cube-support-0.png" alt="Cube with its twelve physical edges split"><figcaption>Support experiment: the twelve physical edges are split once.</figcaption></figure>
+    <figure><img src="./assets/cube-support-2.png" alt="Supported cube after two Loop iterations"><figcaption>Supported cube after two iterations.</figcaption></figure>
+    <figure><img src="./assets/cube-none-2.png" alt="Unprocessed cube after two Loop iterations"><figcaption>Original triangulation after the same two iterations.</figcaption></figure>
   </div>
 
+  <h2>Extra Credit</h2>
+  <h3>Boundary splits and boundary-aware Loop subdivision</h3>
+  <p>For an edge on the boundary, the new vertex stays at its midpoint rather than using two opposite vertices. An old boundary vertex moves to <code>3/4 P + 1/8 N₁ + 1/8 N₂</code>, where <code>N₁</code> and <code>N₂</code> are its two neighbors along the boundary. Interior vertices keep the usual Loop rule. We calculate every position before splitting edges, and boundary edges are never flipped.</p>
+  <p>Our open patch has a real interior vertex and one outer boundary loop. The screenshots show a boundary split and two subdivision rounds. We also checked an annulus with two separate boundary loops. Those tests exposed a starter-code omission: a virtual boundary face did not have a representative halfedge. We set that pointer when constructing the loop and keep it valid after a split.</p>
+  <div class="image-grid">
+    <figure><img src="./assets/boundary-loop-0.png" alt="Original open triangle patch"><figcaption>Open patch before editing: 9 vertices, 8 triangles.</figcaption></figure>
+    <figure><img src="./assets/boundary-split.png" alt="Open patch with one boundary edge split"><figcaption>One boundary split: 10 vertices, 9 triangles. The outer loop is still closed.</figcaption></figure>
+    <figure><img src="./assets/boundary-loop-1.png" alt="Open patch after one Loop iteration"><figcaption>One Loop iteration: 25 vertices, 32 triangles.</figcaption></figure>
+    <figure><img src="./assets/boundary-loop-2.png" alt="Open patch after two Loop iterations"><figcaption>Two iterations: 81 vertices, 128 triangles. Boundary corners round without closing the opening.</figcaption></figure>
+  </div>
+  <h3>An additional scheme: √3 subdivision</h3>
+  <p>We implemented <a href="https://www.graphics.rwth-aachen.de/publication/03172_03138/">Kobbelt's √3 subdivision</a> for closed triangle meshes. Press <code>U</code> to use it; <code>L</code> still runs Loop. We insert a centroid into each original face, then replace each original edge with a connection between the centroids on its two sides. Each face becomes three triangles, so the face count grows by three instead of Loop's factor of four.</p>
+  <p>For an original vertex of degree <code>n</code>, we use <code>α = (4 − 2 cos(2π/n))/9</code> and update it to <code>(1 − α)P + (α/n)ΣN</code>. Centroids use the original face positions. We build the resulting triangles from saved vertex and face indices, which expresses the centroid split and original-edge flip without introducing another local pointer-rewiring routine. This rebuild invalidates old selections, so the viewer clears them afterward. This scheme supports closed meshes; open meshes use our boundary-aware Loop implementation.</p>
+  <div class="image-grid">
+    <figure><img src="./assets/cube-sqrt3-0.png" alt="Original cube for sqrt3 subdivision"><figcaption>Original cube: 12 triangles.</figcaption></figure>
+    <figure><img src="./assets/cube-sqrt3-1.png" alt="Cube after one sqrt3 iteration"><figcaption>One √3 iteration: 36 triangles.</figcaption></figure>
+    <figure><img src="./assets/cube-sqrt3-2.png" alt="Cube after two sqrt3 iterations"><figcaption>Two iterations: 108 triangles.</figcaption></figure>
+    <figure><img src="./assets/cube-sqrt3-3.png" alt="Cube after three sqrt3 iterations"><figcaption>Three iterations: 324 triangles. The connectivity differs from Loop's midpoint grid.</figcaption></figure>
+  </div>
+  <h2>Section III: Creative Mesh and Custom Shader</h2>
+  <p>We designed a retro rocket instead of the tutorial's humanoid. We generated twelve-sided rings with changing radii for the nozzle, body, shoulder, and nose, capped both ends, and added three thick triangular fins. Closely spaced rings near the nozzle and shoulder support those features during smoothing. The fuselage and fins are separate closed components that overlap at the roots; they do not share nonmanifold edges. The control mesh has 128 vertices and 240 triangles and is saved as <a href="./artcompetition.dae">artcompetition.dae</a>.</p>
+  <div class="image-grid">
+    <figure><img src="./assets/rocket-loop-0.png" alt="Original rocket control mesh"><figcaption>Our original rocket control mesh.</figcaption></figure>
+    <figure><img src="./assets/rocket-loop-1.png" alt="Rocket after one Loop iteration"><figcaption>One Loop iteration: 960 triangles.</figcaption></figure>
+    <figure><img src="./assets/rocket-loop-2.png" alt="Rocket after two Loop iterations"><figcaption>Two iterations: 3,840 triangles. The body and fins become smoother.</figcaption></figure>
+    <figure><img src="./assets/rocket-shader.png" alt="Rocket with custom teal and copper shader"><figcaption>Two iterations with our custom shader.</figcaption></figure>
+  </div>
+  <p>Our custom fragment shader mixes teal paint with copper bands based on the surface's height. Four diffuse-light levels give it a slightly illustrated appearance, while a pale rim term outlines surfaces facing away from the eye. A narrow specular term adds highlights. In MeshEdit, press <code>Q</code> for smooth normals, <code>W</code> for shader mode, and <code>2</code> for this shader. The bands are procedural, so they do not require texture coordinates.</p>
+  <p>We checked triangle cycles, twins, representative pointers, normals, and subdivision positions after repeated edits. Report images for the new experiments were captured from the actual MeshEdit framebuffer with fixed camera settings. This keeps comparisons consistent and makes them reproducible.</p>
 
 		</div>
 	</body>
