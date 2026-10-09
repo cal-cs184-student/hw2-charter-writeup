@@ -169,16 +169,19 @@
     <figure><img src="./assets/cube-sqrt3-2.png" alt="Cube after two sqrt3 iterations"><figcaption>Two iterations: 108 triangles.</figcaption></figure>
     <figure><img src="./assets/cube-sqrt3-3.png" alt="Cube after three sqrt3 iterations"><figcaption>Three iterations: 324 triangles. The connectivity differs from Loop's midpoint grid.</figcaption></figure>
   </div>
-  <h2>Section III: Creative Mesh and Custom Shader</h2>
-  <p>We designed a retro rocket instead of the tutorial's humanoid. We generated twelve-sided rings with changing radii for the nozzle, body, shoulder, and nose, capped both ends, and added three thick triangular fins. Closely spaced rings near the nozzle and shoulder support those features during smoothing. The fuselage and fins are separate closed components that overlap at the roots; they do not share nonmanifold edges. The control mesh has 128 vertices and 240 triangles and is saved as <a href="./artcompetition.dae">artcompetition.dae</a>.</p>
+  <h2>Section III: Creative Mesh - San's Mask</h2>
+  <p>We modeled San's mask from <em>Princess Mononoke</em>, using <a href="https://dribbble.com/shots/9762811-Princess-Mononoke-Icon-Weekly-Warmup-20">Megan Cupp's front-view illustration</a> as our visual reference. We focused on the rounded red face, three dark circular openings with ochre rims, cream markings, and pointed ears. The goal was a recognizable mask built from simple shapes.</p>
+  <p>The face is a shallow ellipsoid. We added three torus-like rings around dark discs, two triangular prisms for the ears, and four tapered cones for the teeth. A larger flattened ellipsoid behind the face suggests the fur outline. Each primitive is a closed component with consistent outward winding; the components overlap at their attachment points. The control mesh has 554 vertices and 1,064 triangles and is saved as <a href="./artcompetition.dae">artcompetition.dae</a>.</p>
   <div class="image-grid">
-    <figure><img src="./assets/rocket-loop-0.png" alt="Original rocket control mesh"><figcaption>Our original rocket control mesh.</figcaption></figure>
-    <figure><img src="./assets/rocket-loop-1.png" alt="Rocket after one Loop iteration"><figcaption>One Loop iteration: 960 triangles.</figcaption></figure>
-    <figure><img src="./assets/rocket-loop-2.png" alt="Rocket after two Loop iterations"><figcaption>Two iterations: 3,840 triangles. The body and fins become smoother.</figcaption></figure>
-    <figure><img src="./assets/rocket-shader.png" alt="Rocket with custom teal and copper shader"><figcaption>Two iterations with our custom shader.</figcaption></figure>
+    <figure><img src="./assets/mask-loop-0.png" alt="Original primitive mask control mesh"><figcaption>Original control mesh: 1,064 triangles.</figcaption></figure>
+    <figure><img src="./assets/mask-loop-1.png" alt="Mask after one Loop subdivision"><figcaption>One Loop iteration: 4,256 triangles.</figcaption></figure>
+    <figure><img src="./assets/mask-loop-2.png" alt="Mask after two Loop subdivisions"><figcaption>Two iterations: 17,024 triangles. The face and rings become smoother, while the ears and teeth soften.</figcaption></figure>
+    <figure><img src="./assets/mask-flat.png" alt="Mask with flat primitive shading"><figcaption>The original mesh with flat normals and basic diffuse shading.</figcaption></figure>
+    <figure><img src="./assets/mask-shaded.png" alt="Front view of San's mask with simple colors and lighting"><figcaption>Two iterations with interpolated vertex normals and the same simple shader.</figcaption></figure>
+    <figure><img src="./assets/mask-side.png" alt="Oblique view showing the shallow mask shell and raised rings"><figcaption>An oblique view shows the shallow shell and raised circular rims.</figcaption></figure>
   </div>
-  <p>Our custom fragment shader mixes teal paint with copper bands based on the surface's height. Four diffuse-light levels give it a slightly illustrated appearance, while a pale rim term outlines surfaces facing away from the eye. A narrow specular term adds highlights. In MeshEdit, press <code>Q</code> for smooth normals, <code>W</code> for shader mode, and <code>2</code> for this shader. The bands are procedural, so they do not require texture coordinates.</p>
-  <p>We checked triangle cycles, twins, representative pointers, normals, and subdivision positions after repeated edits. Report images for the new experiments were captured from the actual MeshEdit framebuffer with fixed camera settings. This keeps comparisons consistent and makes them reproducible.</p>
+  <p>We used basic ambient and Lambert diffuse shading: <code>color × (0.30 + 0.70 max(N · L, 0))</code>. Simple position tests assign red, cream, ochre, and dark colors. Two curves in the face's local coordinates define the painted brow and cheek bands. The cream backing is kept separate from those paint tests using its depth. In MeshEdit, press <code>W</code> and <code>2</code> for this shader, and <code>Q</code> to compare flat and smooth normals.</p>
+  <p>The result is a simplified study. The dark discs suggest eye and mouth openings but are not actual through-holes, and the cream backing has no fur strands. Subdivision rounds the ears and teeth more than in the reference. Even with those limitations, the silhouette, circular features, and color layout make the intended mask readable. We checked the primitive winding, closed edge connectivity, vertex normals, and repeated subdivision before capturing the result.</p>
 
 		</div>
 	</body>

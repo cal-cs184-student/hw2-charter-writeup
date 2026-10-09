@@ -1,0 +1,24 @@
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=554 E=1596 F=1064 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=2150 E=6384 F=4256 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=8534 E=25536 F=17024 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=554 E=1596 F=1064 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=8534 E=25536 F=17024 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
+WARNING: geometry i given no material: mesh. A default material will be used.
+V=8534 E=25536 F=17024 boundaries=0
+MeshEdit: loading scene:
+Done loading scene. Mesh Ready for Editing!
